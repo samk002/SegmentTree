@@ -7,11 +7,13 @@ class segmentTree{
     public:
     int *initial;
     int *tree;
+    int *lazy_tree;
 
     segmentTree(int n){
         initial = new int[n];
         int a_size = 2*n- 1;
         tree = new int[a_size];
+        lazy_tree = new int[a_size];
     }
 
     //build 
@@ -20,9 +22,15 @@ class segmentTree{
     //update
     void update(int node,int value,int idx,int start,int end);
 
+    //lazy_update
+    void lazy_update(int node,int start,int end,int l,int r,int value);
+
 
     //query
     int query(int node,int start,int end, int l ,int r);
+
+    //lazy_query
+    int lazy_query(int node,int start,int end,int l,int r);
 
 
     //print
@@ -48,8 +56,8 @@ void segmentTree::build(int node,int start,int end){
 
 void segmentTree::update(int node,int value,int idx,int start,int end){
     if(start == end){
-        initial[idx] = value;
-        tree[node] = value;
+        initial[idx] += value;
+        tree[node] += value;
     }
     else{
         int mid = (start + end)/2;
@@ -58,6 +66,34 @@ void segmentTree::update(int node,int value,int idx,int start,int end){
 
         tree[node] = min(tree[2*node+1],tree[2*node+2]);
     }
+}
+
+void segmentTree::lazy_update(int node,int start,int end,int l,int r,int value){
+
+    if(lazy_tree[node] != 0){
+        tree[node] += lazy_tree[node];
+        if(start != end){
+            lazy_tree[2*node+1] += lazy_tree[node];
+            lazy_tree[2*node+2] += lazy_tree[node]; 
+        }
+        lazy_tree[node] = 0;
+    }
+
+    if(start > r || start > end || end < l) return;
+
+    if(start >=l && end <= r){
+        lazy_tree[node] += value;
+        
+        if(start != end){
+            lazy_tree[2*node+1] += value;
+            lazy_tree[2*node+2] += value;
+        }
+        return;
+    }
+    int mid = (start+end)/2;
+    lazy_update(2*node+1,start,mid,l,r,value);
+    lazy_update(2*node+2,mid+1,end,l,r,value);
+    tree[node] = min(tree[2*node+1],tree[2*node+2]);
 }
 
 int segmentTree :: query(int node,int start,int end, int l ,int r){
@@ -75,6 +111,28 @@ int segmentTree :: query(int node,int start,int end, int l ,int r){
 
     return min(p,q);
 }
+
+int segmentTree :: lazy_query(int node,int start,int end,int l,int r){
+    if(start > end || start > r || end < l) return INT_MAX;
+
+    if(lazy_tree[node] != 0){
+        tree[node] += lazy_tree[node];
+
+        if(start != end){
+            lazy_tree[2*node+1] = tree[node];
+            lazy_tree[2*node+2] = tree[node];
+        }
+        lazy_tree[node] = 0;
+    }
+    if(start >= l && end <= r) return tree[node];
+
+    int mid = (start+end)/2;
+    int left=lazy_query(2*node+1,start,mid,l,r);
+    int right=lazy_query(2*node+2,mid+1,end,l,r);
+    return min(left,right);
+
+}
+
 
 int main(){
     int n; cin>>n;
